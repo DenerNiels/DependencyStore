@@ -12,12 +12,16 @@ public class OrderController : ControllerBase
 {
     private readonly ICustomerRepository _customerRepository;
     private readonly IDeliveryFeeService _deliveryFeeService;
+    private readonly IPromoCodeRepository _promoCodeRepository;
     public OrderController(
         ICustomerRepository customerRepository, 
-        IDeliveryFeeService deliveryFeeService)
+        IDeliveryFeeService deliveryFeeService,
+        IPromoCodeRepository promoCodeRepository)
     {
         _customerRepository = customerRepository;
         _deliveryFeeService = deliveryFeeService;
+        _promoCodeRepository = promoCodeRepository;
+
     }
     [Route("v1/orders")]
     [HttpPost]
@@ -30,6 +34,8 @@ public class OrderController : ControllerBase
 
         // #2 - Calcula o frete
         var deliveryFee = await _deliveryFeeService.GetDeliveryFeeAsync(zipCode);
+        var cupon = await _promoCodeRepository.GetPromoCodeAsync(promoCode);
+        var discount = cupon?.Value ?? 0M;
 
         // #3 - Calcula o total dos produtos
         decimal subTotal = 0;
@@ -44,7 +50,7 @@ public class OrderController : ControllerBase
         }
 
         // #4 - Aplica o cupom de desconto
-        decimal discount = 0;
+        //decimal discount = 0;
         await using (var conn = new SqlConnection("CONN_STRING"))
         {
             const string query = "SELECT * FROM PROMO_CODES WHERE CODE=@code";
